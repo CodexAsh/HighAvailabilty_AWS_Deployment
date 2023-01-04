@@ -9,6 +9,11 @@ Parameters:
         Type: String
         Default: 10.0.0.0/16
 
+    PublicSubnet1CIDR:
+        Description: CidrBlock for PublicSubnet1
+        Type: String
+        Default: 10.0.1.0/24
+
 Resources:
     VPC:
             Type: AWS::EC2::VPC
@@ -37,6 +42,24 @@ Resources:
                  Ref: InternetGateway
                 VpcId:
                  Ref: VPC
-            
 
+
+    PublicSubnet1:       
+            Type: AWS::EC2::Subnet
+            Properties: 
+                AvailabilityZone: 
+                    Fn::Select: 
+                    - 0
+                    - Fn::GetAZs: ""
+                CidrBlock:
+                 Ref: PublicSubnet1CIDR
+                VpcId: 
+                 Ref: VPC
+                Tags: 
+                    - Key: Name
+                      Value: 
+                       Ref: EnvironmentName
+                    - Key: Subent 
+                      Value: "PublicSubnet1"
+               
 
