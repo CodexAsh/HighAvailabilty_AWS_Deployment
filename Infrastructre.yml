@@ -1,5 +1,4 @@
 Parameters:
-
     EnvironmentName:
         Description: An Environment name that will be prefixed to resources
         Type: String
@@ -23,7 +22,7 @@ Parameters:
         Description: CidrBlock for PrivateSubnet1
         Type: String
         Default: 10.0.3.0/24
-    
+
     PrivateSubnet2CIDR:
         Description: CidrBlock for PublicSubnet2
         Type: String
@@ -31,102 +30,147 @@ Parameters:
 
 Resources:
     VPC:
-            Type: AWS::EC2::VPC
-            Properties: 
-                CidrBlock:
-                   Ref: VpcCIDR
-                EnableDnsHostnames: true
-                Tags: 
-                    - Key: Name
-                      Value:
-                       Ref: EnvironmentName
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock:
+                Ref: VpcCIDR
+            EnableDnsHostnames: true
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
 
     InternetGateway:
-            Type: AWS::EC2::InternetGateway
-            Properties: 
-                Tags: 
-                    - Key: Name
-                      Value:
-                       Ref: EnvironmentName
+        Type: AWS::EC2::InternetGateway
+        Properties:
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
 
-   
     InternetGatewayAttachment:
-            Type: AWS::EC2::VPCGatewayAttachment
-            Properties: 
-                InternetGatewayId:
-                 Ref: InternetGateway
-                VpcId:
-                 Ref: VPC
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            InternetGatewayId:
+                Ref: InternetGateway
+            VpcId:
+                Ref: VPC
 
-
-    PublicSubnet1:       
-            Type: AWS::EC2::Subnet
-            Properties: 
-                AvailabilityZone: 
-                    Fn::Select: 
+    PublicSubnet1:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
                     - 0
                     - Fn::GetAZs: ""
-                CidrBlock:
-                 Ref: PublicSubnet1CIDR
-                VpcId: 
-                 Ref: VPC
-                Tags: 
-                    - Key: Name
-                      Value: 
-                       Ref: EnvironmentName
-                    - Key: Subent 
-                      Value: "PublicSubnet1"
+            CidrBlock:
+                Ref: PublicSubnet1CIDR
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+                - Key: Subent
+                  Value: "PublicSubnet1"
 
-    PublicSubnet2:       
-            Type: AWS::EC2::Subnet
-            Properties: 
-                AvailabilityZone: 
-                    Fn::Select: 
+    PublicSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
                     - 1
                     - Fn::GetAZs: ""
-                CidrBlock:
-                 Ref: PublicSubnet2CIDR
-                VpcId: 
-                 Ref: VPC
-                Tags: 
-                    - Key: Name
-                      Value: 
-                       Ref: EnvironmentName
-                    - Key: Subent 
-                      Value: "PublicSubnet2"
-               
-    PrivateSubnet1:       
-            Type: AWS::EC2::Subnet
-            Properties: 
-                AvailabilityZone: 
-                    Fn::Select: 
+            CidrBlock:
+                Ref: PublicSubnet2CIDR
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+                - Key: Subent
+                  Value: "PublicSubnet2"
+
+    PrivateSubnet1:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
                     - 0
                     - Fn::GetAZs: ""
-                CidrBlock:
-                 Ref: PrivateSubnet1CIDR
-                VpcId: 
-                 Ref: VPC
-                Tags: 
-                    - Key: Name
-                      Value: 
-                       Ref: EnvironmentName
-                    - Key: Subent 
-                      Value: "PrivateSubnet1"
+            CidrBlock:
+                Ref: PrivateSubnet1CIDR
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+                - Key: Subent
+                  Value: "PrivateSubnet1"
 
-    PrivateSubnet2:       
-            Type: AWS::EC2::Subnet
-            Properties: 
-                AvailabilityZone: 
-                    Fn::Select: 
+    PrivateSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
                     - 1
                     - Fn::GetAZs: ""
-                CidrBlock:
-                 Ref: PrivateSubnet2CIDR
-                VpcId: 
-                 Ref: VPC
-                Tags: 
-                    - Key: Name
-                      Value: 
-                       Ref: EnvironmentName
-                    - Key: Subent 
-                      Value: "PrivateSubnet2"
+            CidrBlock:
+                Ref: PrivateSubnet2CIDR
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+                - Key: Subent
+                  Value: "PrivateSubnet2"
+
+    ElasticIP1:
+        Type: AWS::EC2::EIP
+        DependsOn: InternetGatewayAttachment
+        Properties:
+            Domain:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+    NatGateway1:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+              Fn::GetAtt: [ ElasticIP1, AllocationId ]
+            SubnetId:
+                Ref: PublicSubnet1
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+
+    ElasticIP2:
+        Type: AWS::EC2::EIP
+        DependsOn: InternetGatewayAttachment
+        Properties:
+            Domain:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+    NatGateway2:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+              Fn::GetAtt: [ ElasticIP2, AllocationId ]
+            SubnetId:
+                Ref: PublicSubnet2
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
