@@ -143,14 +143,13 @@ Resources:
         Type: AWS::EC2::NatGateway
         Properties:
             AllocationId:
-              Fn::GetAtt: [ ElasticIP1, AllocationId ]
+                Fn::GetAtt: [ElasticIP1, AllocationId]
             SubnetId:
                 Ref: PublicSubnet1
             Tags:
                 - Key: Name
                   Value:
                       Ref: EnvironmentName
-
 
     ElasticIP2:
         Type: AWS::EC2::EIP
@@ -167,10 +166,100 @@ Resources:
         Type: AWS::EC2::NatGateway
         Properties:
             AllocationId:
-              Fn::GetAtt: [ ElasticIP2, AllocationId ]
+                Fn::GetAtt: [ElasticIP2, AllocationId]
             SubnetId:
                 Ref: PublicSubnet2
             Tags:
                 - Key: Name
                   Value:
                       Ref: EnvironmentName
+
+    PublicRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+    DefaultPublicRoute:
+        Type: AWS::EC2::Route
+        DependsOn: PublicRouteTable
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId:
+                Ref: InternetGateway
+            RouteTableId:
+                Ref: PublicRouteTable
+
+    PublicSubnetRouteTableAssociation1:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PublicSubnet1
+            RouteTableId:
+                Ref: PublicRouteTable
+
+    PublicSubnetRouteTableAssociation2:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PublicSubnet2
+            RouteTableId:
+                Ref: PublicRouteTable
+
+    PrivateRouteTable1:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+    PrivateRoute1:
+        Type: AWS::EC2::Route
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            NatGatewayId:
+                Ref: NatGateway1
+            RouteTableId:
+                Ref: PrivateRouteTable1
+
+    PrivateSubnetRouteTableAssociation1:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PrivateSubnet1
+            RouteTableId:
+                Ref: PrivateRouteTable1
+
+    PrivateRouteTable2:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: VPC
+            Tags:
+                - Key: Name
+                  Value:
+                      Ref: EnvironmentName
+
+    PrivateRoute2:
+        Type: AWS::EC2::Route
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            NatGatewayId:
+                Ref: NatGateway2
+            RouteTableId:
+                Ref: PrivateRouteTable2
+
+    PrivateSubnetRouteTableAssociation2:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PrivateSubnet2
+            RouteTableId:
+                Ref: PrivateRouteTable2
