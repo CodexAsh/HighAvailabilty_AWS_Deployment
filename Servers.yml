@@ -1,0 +1,92 @@
+Description: > 
+
+    "This Script includes Hosting of Websevers for the Applciation, Database and Loadblancer
+    Load balalncing and ofcourse firewalls rules"
+
+Parameters:
+    EnvironmentName:
+        Description: An Environment name that will be prefixed to resources
+        Type: String
+
+
+Resources:
+      LBSecurityGroup:
+              Type: AWS::EC2::SecurityGroup
+              Properties: 
+                  GroupDescription: "This is a Security Group for Load balancer"
+                  SecurityGroupEgress: 
+                      - IpProtocol: tcp
+                        FromPort: 80
+                        ToPort: 80
+                        CidrIp: 0.0.0.0/0
+                  SecurityGroupIngress: 
+                      - IpProtocol: tcp
+                        FromPort: 80
+                        ToPort: 80
+                        CidrIp: 0.0.0.0/0
+                  Tags: 
+                    - Key: Name
+                      Value: !Ref EnvironmentName
+                  VpcId: 
+                    Fn::ImportValue: 
+                          !Sub "${EnvironmentName}-VPC"
+
+      WSSecurityGroup:
+            Type: AWS::EC2::SecurityGroup
+            Properties: 
+                GroupDescription: "This is a Security Group for WebServers"
+                SecurityGroupEgress: 
+                    - IpProtocol: tcp
+                      FromPort: 80
+                      ToPort: 80
+                      CidrIp: 0.0.0.0/0
+                SecurityGroupIngress: 
+                    - IpProtocol: tcp
+                      FromPort: 80
+                      ToPort: 80
+                      CidrIp: 0.0.0.0/0
+                Tags: 
+                  - Key: Name
+                    Value: !Ref EnvironmentName
+                VpcId: 
+                  Fn::ImportValue: 
+                      !Sub "${EnvironmentName}-VPC"
+
+      WebserversLaunchConfig:
+              Type: AWS::AutoScaling::LaunchConfiguration
+              Properties: 
+                  BlockDeviceMappings:
+                    - DeviceName: "/dev/sdk"
+                      Ebs:
+                        VolumeSize: '10'
+                  ImageId: ami-0cca134ec43cf708f
+                  InstanceType: t3.micro
+                  SecurityGroups: 
+                    - Ref: WSSecurityGroup
+                  UserData:
+                    Fn::Base64: |
+                      #!/bin/bash
+                      sudo -s
+                      apt-get update -y
+                      apt-get install apache2 -y
+                      systemctl start apache2.service
+                 
+
+
+      WebGroup:                
+          Type: AWS::AutoScaling::AutoScalingGroup
+          Properties: 
+            LaunchConfigurationName: !Ref WebserversLaunchConfig
+            MaxSize: 3
+            MinSize: 1
+            Tags:
+            - Key: Environment
+              Value: Production
+              PropagateAtLaunch: true
+            - Key: Purpose
+              Value: WebServerGroup
+              PropagateAtLaunch: false
+            VPCZoneIdentifier: 
+               - Fn::ImportValue:
+                  !Sub "${EnvironmentName}-Private-Subnets"
+
