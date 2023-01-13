@@ -40,11 +40,13 @@ Resources:
                       FromPort: 80
                       ToPort: 80
                       CidrIp: 0.0.0.0/0
+                
                 SecurityGroupIngress: 
                     - IpProtocol: tcp
                       FromPort: 80
                       ToPort: 80
                       CidrIp: 0.0.0.0/0
+                
                 Tags: 
                   - Key: Name
                     Value: !Ref EnvironmentName
@@ -55,22 +57,18 @@ Resources:
       WebserversLaunchConfig:
               Type: AWS::AutoScaling::LaunchConfiguration
               Properties: 
-                  BlockDeviceMappings:
-                    - DeviceName: "/dev/sdk"
-                      Ebs:
-                        VolumeSize: '10'
-                  ImageId: ami-0cca134ec43cf708f
+                  AssociatePublicIpAddress: true
+                  ImageId: ami-0f69bc5520884278e
                   InstanceType: t3.micro
                   SecurityGroups: 
                     - Ref: WSSecurityGroup
                   UserData:
-                    Fn::Base64: |
-                      #!/bin/bash
-                      sudo -s
-                      apt-get update -y
-                      apt-get install apache2 -y
-                      systemctl start apache2.service
-                 
+                    Fn::Base64:  |
+                        #!/bin/bash
+                        apt update -y
+                        apt install nginx -y
+                        systemctl start nginx
+
 
 
       WebGroup:                
@@ -79,6 +77,8 @@ Resources:
             LaunchConfigurationName: !Ref WebserversLaunchConfig
             MaxSize: 3
             MinSize: 1
+            TargetGroupARNs: 
+             - Ref: WebAppTargetGroup
             Tags:
             - Key: Environment
               Value: Production
@@ -90,3 +90,54 @@ Resources:
                - Fn::ImportValue:
                   !Sub "${EnvironmentName}-Private-Subnets"
 
+
+
+      WebAppTargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+          HealthCheckIntervalSeconds: 35
+          HealthCheckPath: /
+          HealthCheckProtocol: HTTP
+          HealthCheckTimeoutSeconds: 15
+          HealthyThresholdCount: 2
+          Port: 80
+          Protocol: HTTP
+          UnhealthyThresholdCount: 5
+          VpcId: 
+            Fn::ImportValue:
+              Fn::Sub: "${EnvironmentName}-VPC"
+
+      LoadBalancer:
+        Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+        Properties: 
+          Name: ApplicationLoadBalancer
+          SecurityGroups: 
+            - !Ref LBSecurityGroup
+          Subnets: 
+             - Fn::ImportValue: !Sub "${EnvironmentName}-PublicSubnet1"
+             - Fn::ImportValue: !Sub "${EnvironmentName}-PublicSubnet2"
+       
+
+      LoadBalancerListner:
+        Type: AWS::ElasticLoadBalancingV2::Listener
+        Properties: 
+          DefaultActions: 
+          - Type: forward
+            TargetGroupArn: !Ref WebAppTargetGroup
+          LoadBalancerArn: !Ref LoadBalancer
+          Port: 80
+          Protocol: HTTP
+
+      ListnerRule:
+          Type: AWS::ElasticLoadBalancingV2::ListenerRule
+          Properties: 
+            Actions: 
+              - Type: forward
+                TargetGroupArn: !Ref WebAppTargetGroup
+            Conditions: 
+              - Field: path-pattern
+                Values: [/]
+            ListenerArn: !Ref LoadBalancerListner
+            Priority: 1
+
+          
