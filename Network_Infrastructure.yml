@@ -230,8 +230,8 @@ Resources:
     DependsOn: PrivateRouteTable1
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
+      NatGatewayId:
+        Ref: NatGateway1
       RouteTableId:
         Ref: PrivateRouteTable1
 
@@ -258,8 +258,8 @@ Resources:
     DependsOn: PrivateRouteTable2
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
+      NatGatewayId:
+        Ref: NatGateway2
       RouteTableId:
         Ref: PrivateRouteTable2
 
